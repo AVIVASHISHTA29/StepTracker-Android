@@ -36,7 +36,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         val trajectoryView = findViewById<TrajectoryView>(R.id.trajectoryView)
         trajectoryView.post {
-            trajectoryView.initialize()
             xPos = trajectoryView.width / 2f
             yPos = trajectoryView.height / 2f
         }
@@ -54,7 +53,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
-            initialize()
             invalidate()
         }
     }
