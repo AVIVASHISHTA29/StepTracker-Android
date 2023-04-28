@@ -6,6 +6,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
@@ -39,6 +40,23 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             xPos = trajectoryView.width / 2f
             yPos = trajectoryView.height / 2f
         }
+
+
+        val resetButton: Button = findViewById(R.id.btn_reset)
+        resetButton.setOnClickListener {
+            reset()
+        }
+    }
+
+    private fun reset() {
+        stepCount = 0
+        findViewById<TextView>(R.id.tv_step_count).text = "Steps: 0"
+        findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
+        findViewById<TrajectoryView>(R.id.trajectoryView).apply {
+            path.reset()
+            initialize()
+            invalidate()
+        }
     }
 
     override fun onResume() {
@@ -62,9 +80,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     if (!initial) {
                         if (previousY > 0 && y < 0) {
                             stepCount++
-                            findViewById<TextView>(R.id.tv_steps).text = "Steps: $stepCount"
+                            findViewById<TextView>(R.id.tv_step_count).text = "Steps: $stepCount"
 
-                            val strideLength = 1.5f // Replace this with your stride length calculation
+                            val strideLength = 183*0.415f // Replace this with your stride length calculation
                             val deltaX = strideLength * kotlin.math.cos(orientation[0])
                             val deltaY = strideLength * kotlin.math.sin(orientation[0])
                             xPos += deltaX

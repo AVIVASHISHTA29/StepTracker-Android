@@ -7,11 +7,13 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
 import android.view.View
+import kotlin.math.absoluteValue
 
 class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attrs) {
-    private val path = Path()
+    val path = Path()
+
     private val paint = Paint().apply {
-        color = Color.BLACK
+        color = Color.GRAY
         strokeWidth = 5f
         style = Paint.Style.STROKE
         isAntiAlias = true
@@ -29,9 +31,11 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
     fun addPoint(deltaX: Float, deltaY: Float) {
         val newX = prevX + deltaX
         val newY = prevY - deltaY
+
         path.lineTo(newX, newY)
         prevX = newX
         prevY = newY
+
         invalidate()
     }
 
