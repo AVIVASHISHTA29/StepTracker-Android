@@ -8,12 +8,15 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometer: Sensor
     private lateinit var magnetometer: Sensor
+
+    private var pressureSensor: Sensor? = null
     private val RArr = FloatArray(9)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
@@ -26,6 +29,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var xPos = 0f
     private var yPos = 0f
 
+    private var lastPressure: Float = 0f
+    private var pressureChange: Float = 0f
+    private val pressureThresholdLift = 5f
+    private val pressureThresholdStairs = 2f
+
+    private val pressureData = FloatArray(10) // Use a larger window size for more smoothing
+    private var pressureDataIndex = 0
+
+    private var lastCheckStepCount = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -33,6 +46,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
 
         val trajectoryView = findViewById<TrajectoryView>(R.id.trajectoryView)
         trajectoryView.post {
@@ -64,6 +78,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL)
+        pressureSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
     }
 
     override fun onPause() {
@@ -72,6 +87,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
+
         event?.let {
             when (event.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> {
@@ -107,7 +123,34 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     findViewById<TextView>(R.id.tv_direction).text = "Direction: $direction"
 
                 }
+
+                Sensor.TYPE_PRESSURE -> {
+                    val pressure = event.values[0]
+                    pressureData[pressureDataIndex] = pressure
+                    pressureDataIndex = (pressureDataIndex + 1) % pressureData.size
+
+                    val avgPressure = pressureData.average()
+                    if (lastPressure != 0f) {
+                        pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
+                    }
+                    lastPressure = avgPressure.toFloat()
+                }
+
             }
+            if (stepCount - lastCheckStepCount >= 5) {
+                checkLiftOrStairs()
+                lastCheckStepCount = stepCount
+            }
+        }
+    }
+
+    private fun checkLiftOrStairs() {
+        if (pressureChange >= pressureThresholdLift) {
+            Toast.makeText(applicationContext, "In the lift", Toast.LENGTH_SHORT).show()
+        } else if(pressureChange>=pressureThresholdStairs) {
+            // The user is likely taking the stairs
+            // Do something, e.g., update UI, show a toast, etc.
+            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
         }
     }
 
