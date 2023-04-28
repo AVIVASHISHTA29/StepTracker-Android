@@ -76,6 +76,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         stepCount = 0
         findViewById<TextView>(R.id.tv_step_count).text = "Steps: 0"
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
+        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: NA"
+        findViewById<TextView>(R.id.tv_pressure).text = "Pressure: NA"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
             initialize(width / 2f, height / 2f)
@@ -110,7 +112,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                             stepCount++
                             findViewById<TextView>(R.id.tv_step_count).text = "Steps: $stepCount"
 
-                            val strideLength = 183*0.415f // Replace this with your stride length calculation
+                            val strideLength = 250*0.415f // Replace this with your stride length calculation
                             val deltaX = strideLength * kotlin.math.cos(orientation[0])
                             val deltaY = strideLength * kotlin.math.sin(orientation[0])
                             xPos += deltaX
@@ -145,6 +147,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
                     }
                     lastPressure = avgPressure.toFloat()
+                    findViewById<TextView>(R.id.tv_pressure).text = "Pressure: ${pressureChange}"
                 }
 
                 Sensor.TYPE_GYROSCOPE ->{
@@ -156,7 +159,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         // Detected stairs or elevator
                         // You can refine this logic to differentiate between stairs and elevators
                         // by analyzing patterns in the gyroscope and accelerometer data
-                        Toast.makeText(applicationContext, "In the lift or on stairs ", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
+                        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: ${gyroscopeYChange}"
                         gyroscopeYChange = 0f
                     }
                 }
@@ -172,10 +176,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private fun checkLiftOrStairs() {
         if (pressureChange >= pressureThresholdLift) {
             Toast.makeText(applicationContext, "In the lift", Toast.LENGTH_SHORT).show()
+
         } else if(pressureChange>=pressureThresholdStairs) {
             // The user is likely taking the stairs
             // Do something, e.g., update UI, show a toast, etc.
             Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
+
         }
     }
 
