@@ -1,6 +1,7 @@
 package com.example.assignment5
 
 
+import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -15,6 +16,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometer: Sensor
     private lateinit var magnetometer: Sensor
+    private lateinit var gyroscopeSensor :Sensor
 
     private var pressureSensor: Sensor? = null
     private val RArr = FloatArray(9)
@@ -37,6 +39,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private val pressureData = FloatArray(10) // Use a larger window size for more smoothing
     private var pressureDataIndex = 0
 
+    private var lastGyroscopeY = 0f
+    private var gyroscopeYChange = 0f
+    private val gyroscopeYThreshold = 5f
+
     private var lastCheckStepCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +53,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
+        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        sensorManager.registerListener(this, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL)
 
+        if(pressureSensor==null){
+            Toast.makeText(applicationContext, "No Pressure sensor in this device, using Gyroscope", Toast.LENGTH_SHORT).show()
+        }
         val trajectoryView = findViewById<TrajectoryView>(R.id.trajectoryView)
         trajectoryView.post {
             xPos = trajectoryView.width / 2f
@@ -134,6 +145,20 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
                     }
                     lastPressure = avgPressure.toFloat()
+                }
+
+                Sensor.TYPE_GYROSCOPE ->{
+                    val gyroscopeY = event.values[1]
+                    gyroscopeYChange += kotlin.math.abs(gyroscopeY - lastGyroscopeY)
+                    lastGyroscopeY = gyroscopeY
+
+                    if (gyroscopeYChange > gyroscopeYThreshold) {
+                        // Detected stairs or elevator
+                        // You can refine this logic to differentiate between stairs and elevators
+                        // by analyzing patterns in the gyroscope and accelerometer data
+                        Toast.makeText(applicationContext, "In the lift or on stairs ", Toast.LENGTH_SHORT).show()
+                        gyroscopeYChange = 0f
+                    }
                 }
 
             }
