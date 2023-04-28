@@ -55,9 +55,17 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.save()
+        val translateX = (width - (width * scaleFactor)) / 2
+        val translateY = (height - (height * scaleFactor)) / 2
+        canvas.translate(translateX, translateY)
         canvas.scale(scaleFactor, scaleFactor)
         canvas.drawPath(path, paint)
         canvas.restore()
+    }
+
+    fun resetZoom() {
+        scaleFactor = 1f
+        invalidate()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

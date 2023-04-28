@@ -53,8 +53,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
+            initialize(width / 2f, height / 2f)
+            resetZoom()
             invalidate()
         }
+
     }
 
     override fun onResume() {
