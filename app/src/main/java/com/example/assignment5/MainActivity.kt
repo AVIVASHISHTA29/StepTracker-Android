@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var magnetometer: Sensor
     private lateinit var gyroscopeSensor :Sensor
 
-    private var pressureSensor: Sensor? = null
+
     private val RArr = FloatArray(9)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
@@ -31,11 +31,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var xPos = 0f
     private var yPos = 0f
 
+    private var pressureSensor: Sensor? = null
     private var lastPressure: Float = 0f
     private var pressureChange: Float = 0f
     private val pressureThresholdLift = 5f
     private val pressureThresholdStairs = 2f
-
+    private var lastCheckStepCount = 0
     private val pressureData = FloatArray(10) // Use a larger window size for more smoothing
     private var pressureDataIndex = 0
 
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var gyroscopeYChange = 0f
     private val gyroscopeYThreshold = 5f
 
-    private var lastCheckStepCount = 0
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +53,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-        pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
+//        pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
         gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         sensorManager.registerListener(this, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL)
 
-        if(pressureSensor==null){
-            Toast.makeText(applicationContext, "No Pressure sensor in this device, using Gyroscope", Toast.LENGTH_SHORT).show()
-        }
+//        if(pressureSensor==null){
+//            Toast.makeText(applicationContext, "No Pressure sensor in this device, using Gyroscope", Toast.LENGTH_SHORT).show()
+//        }
         val trajectoryView = findViewById<TrajectoryView>(R.id.trajectoryView)
         trajectoryView.post {
             xPos = trajectoryView.width / 2f
@@ -76,8 +77,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         stepCount = 0
         findViewById<TextView>(R.id.tv_step_count).text = "Steps: 0"
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
-        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: NA"
-        findViewById<TextView>(R.id.tv_pressure).text = "Pressure: NA"
+//        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: NA"
+//        findViewById<TextView>(R.id.tv_pressure).text = "Pressure: NA"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
             initialize(width / 2f, height / 2f)
@@ -91,7 +92,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL)
-        pressureSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        sensorManager.registerListener(this, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL)
+//        pressureSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
     }
 
     override fun onPause() {
@@ -137,18 +139,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
                 }
 
-                Sensor.TYPE_PRESSURE -> {
-                    val pressure = event.values[0]
-                    pressureData[pressureDataIndex] = pressure
-                    pressureDataIndex = (pressureDataIndex + 1) % pressureData.size
-
-                    val avgPressure = pressureData.average()
-                    if (lastPressure != 0f) {
-                        pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
-                    }
-                    lastPressure = avgPressure.toFloat()
-                    findViewById<TextView>(R.id.tv_pressure).text = "Pressure: ${pressureChange}"
-                }
+//                Sensor.TYPE_PRESSURE -> {
+//                    val pressure = event.values[0]
+//                    pressureData[pressureDataIndex] = pressure
+//                    pressureDataIndex = (pressureDataIndex + 1) % pressureData.size
+//
+//                    val avgPressure = pressureData.average()
+//                    if (lastPressure != 0f) {
+//                        pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
+//                    }
+//                    lastPressure = avgPressure.toFloat()
+//                }
 
                 Sensor.TYPE_GYROSCOPE ->{
                     val gyroscopeY = event.values[1]
@@ -160,30 +161,29 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         // You can refine this logic to differentiate between stairs and elevators
                         // by analyzing patterns in the gyroscope and accelerometer data
                         Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
-                        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: ${gyroscopeYChange}"
                         gyroscopeYChange = 0f
                     }
                 }
 
             }
-            if (stepCount - lastCheckStepCount >= 5) {
-                checkLiftOrStairs()
-                lastCheckStepCount = stepCount
-            }
+//            if (stepCount - lastCheckStepCount >= 5) {
+//                checkLiftOrStairs()
+//                lastCheckStepCount = stepCount
+//            }
         }
     }
 
-    private fun checkLiftOrStairs() {
-        if (pressureChange >= pressureThresholdLift) {
-            Toast.makeText(applicationContext, "In the lift", Toast.LENGTH_SHORT).show()
-
-        } else if(pressureChange>=pressureThresholdStairs) {
-            // The user is likely taking the stairs
-            // Do something, e.g., update UI, show a toast, etc.
-            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
-
-        }
-    }
+//    private fun checkLiftOrStairs() {
+//        if (pressureChange >= pressureThresholdLift) {
+//            Toast.makeText(applicationContext, "In the lift", Toast.LENGTH_SHORT).show()
+//
+//        } else if(pressureChange>=pressureThresholdStairs) {
+//            // The user is likely taking the stairs
+//            // Do something, e.g., update UI, show a toast, etc.
+//            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
+//
+//        }
+//    }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Not used in this example

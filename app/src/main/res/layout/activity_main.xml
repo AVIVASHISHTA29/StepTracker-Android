@@ -36,36 +36,6 @@
         android:text="Direction: N/A"
         android:textSize="18sp" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        >
-
-        <TextView
-        android:id="@+id/tv_gyro"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="8dp"
-        android:text="Gyro: N/A"
-        android:textAlignment="center"
-        android:layout_weight="1"
-        android:textSize="18sp" />
-
-        <TextView
-        android:id="@+id/tv_pressure"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="8dp"
-        android:layout_weight="1"
-        android:textAlignment="center"
-        android:text="Pressure: N/A"
-        android:textSize="18sp" />
-
-    </LinearLayout>
-
 
     <Button
         android:id="@+id/btn_reset"
