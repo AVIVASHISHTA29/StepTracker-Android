@@ -10,7 +10,7 @@ import android.view.View
 import kotlin.math.absoluteValue
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-
+import kotlin.math.sqrt
 
 class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private val paint = Paint()
@@ -20,6 +20,7 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
     private var scaleFactor = 1f
     private val scaleGestureDetector = ScaleGestureDetector(context, ScaleListener())
 
+    private val points = mutableListOf<Pair<Float, Float>>()
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
@@ -28,6 +29,7 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
 
     fun initialize(startX: Float, startY: Float) {
         path.moveTo(startX, startY)
+        points.add(Pair(startX, startY))
         invalidate()
     }
 
@@ -41,6 +43,10 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
         path.rLineTo(deltaX, deltaY)
         minWidth += deltaX.absoluteValue
         minHeight += deltaY.absoluteValue
+
+        val lastPoint = points.last()
+        val newPoint = Pair(lastPoint.first + deltaX, lastPoint.second + deltaY)
+        points.add(newPoint)
 
         requestLayout()
         invalidate()
@@ -80,5 +86,23 @@ class TrajectoryView(context: Context, attrs: AttributeSet) : View(context, attr
             invalidate()
             return true
         }
+    }
+
+    fun calculateDistance(): Float {
+        var distance = 0f
+        for (i in 1 until points.size) {
+            val dx = points[i].first - points[i - 1].first
+            val dy = points[i].second - points[i - 1].second
+            distance += sqrt(dx * dx + dy * dy)
+        }
+        return distance
+    }
+
+    fun calculateDisplacement(): Float {
+        if (points.size < 2) return 0f
+
+        val dx = points.last().first - points.first().first
+        val dy = points.last().second - points.first().second
+        return sqrt(dx * dx + dy * dy)
     }
 }

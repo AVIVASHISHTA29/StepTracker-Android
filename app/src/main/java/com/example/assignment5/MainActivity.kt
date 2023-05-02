@@ -7,6 +7,8 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -16,8 +18,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometer: Sensor
     private lateinit var magnetometer: Sensor
-    private lateinit var gyroscopeSensor :Sensor
 
+    private val accelChanges = mutableListOf<Float>()
+
+    private var stairsCounter = 0
 
     private val RArr = FloatArray(9)
     private val gravity = FloatArray(3)
@@ -26,23 +30,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private var stepCount = 0
     private var previousY = 0f
+    private var previousZ = 0f
     private var initial = true
+
+    private var lastAccelMagnitude =0f
 
     private var xPos = 0f
     private var yPos = 0f
 
-    private var pressureSensor: Sensor? = null
-    private var lastPressure: Float = 0f
-    private var pressureChange: Float = 0f
-    private val pressureThresholdLift = 5f
-    private val pressureThresholdStairs = 2f
-    private var lastCheckStepCount = 0
-    private val pressureData = FloatArray(10) // Use a larger window size for more smoothing
-    private var pressureDataIndex = 0
-
     private var lastGyroscopeY = 0f
     private var gyroscopeYChange = 0f
-    private val gyroscopeYThreshold = 5f
+    private val gyroscopeYThreshold = 6f
 
 
 
@@ -53,13 +51,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-//        pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
-        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        sensorManager.registerListener(this, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL)
 
-//        if(pressureSensor==null){
-//            Toast.makeText(applicationContext, "No Pressure sensor in this device, using Gyroscope", Toast.LENGTH_SHORT).show()
-//        }
+
         val trajectoryView = findViewById<TrajectoryView>(R.id.trajectoryView)
         trajectoryView.post {
             xPos = trajectoryView.width / 2f
@@ -72,13 +65,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             reset()
         }
     }
+    override fun onDestroy() {
+        super.onDestroy()
 
+        // Remove the Runnable from the handler to prevent memory leaks
+        handler.removeCallbacks(updateTextViewRunnable)
+    }
     private fun reset() {
         stepCount = 0
         findViewById<TextView>(R.id.tv_step_count).text = "Steps: 0"
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
-//        findViewById<TextView>(R.id.tv_gyro).text = "Gyro: NA"
-//        findViewById<TextView>(R.id.tv_pressure).text = "Pressure: NA"
+        findViewById<TextView>(R.id.tv_status).text = "Status: Normal"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
             initialize(width / 2f, height / 2f)
@@ -92,13 +89,21 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL)
-        sensorManager.registerListener(this, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL)
-//        pressureSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val updateTextViewRunnable = object : Runnable {
+        override fun run() {
+            // Update your TextView here
+            findViewById<TextView>(R.id.tv_status).text = "Status: Stairs"
+            // Schedule the next update
+            handler.postDelayed(this, 3000) // 3000ms = 3 seconds
+        }
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -114,14 +119,43 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                             stepCount++
                             findViewById<TextView>(R.id.tv_step_count).text = "Steps: $stepCount"
 
-                            val strideLength = 250*0.415f // Replace this with your stride length calculation
+                            val strideLength = 185*0.415f // Replace this with your stride length calculation
                             val deltaX = strideLength * kotlin.math.cos(orientation[0])
                             val deltaY = strideLength * kotlin.math.sin(orientation[0])
                             xPos += deltaX
                             yPos += deltaY
 
                             findViewById<TrajectoryView>(R.id.trajectoryView).addPoint(deltaX, deltaY)
+                            val distance =  findViewById<TrajectoryView>(R.id.trajectoryView).calculateDistance()
+                            val displacement =  findViewById<TrajectoryView>(R.id.trajectoryView).calculateDisplacement()
+                            findViewById<TextView>(R.id.tv_distance).text = "Distance: $distance cm"
+                            findViewById<TextView>(R.id.tv_displacement).text = "Displacement: $displacement cm"
                         }
+
+                        val x = event.values[0]
+                        val y = event.values[1]
+                        val z = event.values[2]
+
+                        val accelMagnitude = kotlin.math.sqrt(x * x + y * y + z * z)
+                        val accelChange = kotlin.math.abs(accelMagnitude - lastAccelMagnitude)
+
+
+
+
+                        if (accelChange > 7f) {
+                                findViewById<TextView>(R.id.tv_status).text = "Status: On Stairs"
+                                handler.post(updateTextViewRunnable)
+//                            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
+                        }
+
+                        else if(accelChange<=7f){
+                            findViewById<TextView>(R.id.tv_status).text = "Status: Normal"
+                        }
+
+                        lastAccelMagnitude = accelMagnitude
+
+//                        findViewById<TextView>(R.id.tv_direction).text = "AccelChange:$accelChange"
+
                     } else {
                         initial = false
                     }
@@ -135,55 +169,30 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
                     val azimuth = orientation[0] * (180 / Math.PI).toFloat()
                     val direction = getDirectionFromAzimuth(azimuth)
+//                    to check if inside lift
+                    val x = event.values[0]
+                    val y = event.values[1]
+                    val z = event.values[2]
+
+                    val magnetometerReading = kotlin.math.sqrt(x * x + y * y + z * z)
+                    if(magnetometerReading<=27){
+                        findViewById<TextView>(R.id.tv_status).text = "Status: In Lift"
+                    }
+                    else{
+                        findViewById<TextView>(R.id.tv_status).text = "Status: Normal"
+                    }
+
                     findViewById<TextView>(R.id.tv_direction).text = "Direction: $direction"
 
                 }
 
-//                Sensor.TYPE_PRESSURE -> {
-//                    val pressure = event.values[0]
-//                    pressureData[pressureDataIndex] = pressure
-//                    pressureDataIndex = (pressureDataIndex + 1) % pressureData.size
-//
-//                    val avgPressure = pressureData.average()
-//                    if (lastPressure != 0f) {
-//                        pressureChange += kotlin.math.abs(avgPressure.toFloat() - lastPressure)
-//                    }
-//                    lastPressure = avgPressure.toFloat()
-//                }
 
-                Sensor.TYPE_GYROSCOPE ->{
-                    val gyroscopeY = event.values[1]
-                    gyroscopeYChange += kotlin.math.abs(gyroscopeY - lastGyroscopeY)
-                    lastGyroscopeY = gyroscopeY
-
-                    if (gyroscopeYChange > gyroscopeYThreshold) {
-                        // Detected stairs or elevator
-                        // You can refine this logic to differentiate between stairs and elevators
-                        // by analyzing patterns in the gyroscope and accelerometer data
-                        Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
-                        gyroscopeYChange = 0f
-                    }
-                }
 
             }
-//            if (stepCount - lastCheckStepCount >= 5) {
-//                checkLiftOrStairs()
-//                lastCheckStepCount = stepCount
-//            }
+
         }
     }
 
-//    private fun checkLiftOrStairs() {
-//        if (pressureChange >= pressureThresholdLift) {
-//            Toast.makeText(applicationContext, "In the lift", Toast.LENGTH_SHORT).show()
-//
-//        } else if(pressureChange>=pressureThresholdStairs) {
-//            // The user is likely taking the stairs
-//            // Do something, e.g., update UI, show a toast, etc.
-//            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
-//
-//        }
-//    }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Not used in this example
