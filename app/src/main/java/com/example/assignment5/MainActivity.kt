@@ -1,14 +1,10 @@
 package com.example.assignment5
 
-
-import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -18,10 +14,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometer: Sensor
     private lateinit var magnetometer: Sensor
-
-    private val accelChanges = mutableListOf<Float>()
-
-    private var stairsCounter = 0
 
     private val RArr = FloatArray(9)
     private val gravity = FloatArray(3)
@@ -37,11 +29,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private var xPos = 0f
     private var yPos = 0f
-
-    private var lastGyroscopeY = 0f
-    private var gyroscopeYChange = 0f
-    private val gyroscopeYThreshold = 6f
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,14 +55,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onDestroy() {
         super.onDestroy()
 
-        // Remove the Runnable from the handler to prevent memory leaks
-        handler.removeCallbacks(updateTextViewRunnable)
     }
     private fun reset() {
         stepCount = 0
         findViewById<TextView>(R.id.tv_step_count).text = "Steps: 0"
         findViewById<TextView>(R.id.tv_direction).text = "Direction: Unknown"
         findViewById<TextView>(R.id.tv_status).text = "Status: Normal"
+        findViewById<TextView>(R.id.tv_distance).text = "Distance: 0cm"
+        findViewById<TextView>(R.id.tv_displacement).text = "Displacement: 0cm"
         findViewById<TrajectoryView>(R.id.trajectoryView).apply {
             path.reset()
             initialize(width / 2f, height / 2f)
@@ -96,15 +83,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    private val handler = Handler(Looper.getMainLooper())
-    private val updateTextViewRunnable = object : Runnable {
-        override fun run() {
-            // Update your TextView here
-            findViewById<TextView>(R.id.tv_status).text = "Status: Stairs"
-            // Schedule the next update
-            handler.postDelayed(this, 3000) // 3000ms = 3 seconds
-        }
-    }
 
     override fun onSensorChanged(event: SensorEvent?) {
 
@@ -140,12 +118,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         val accelChange = kotlin.math.abs(accelMagnitude - lastAccelMagnitude)
 
 
-
-
                         if (accelChange > 7f) {
                                 findViewById<TextView>(R.id.tv_status).text = "Status: On Stairs"
-                                handler.post(updateTextViewRunnable)
-//                            Toast.makeText(applicationContext, "On stairs", Toast.LENGTH_SHORT).show()
                         }
 
                         else if(accelChange<=7f){
@@ -153,8 +127,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         }
 
                         lastAccelMagnitude = accelMagnitude
-
-//                        findViewById<TextView>(R.id.tv_direction).text = "AccelChange:$accelChange"
 
                     } else {
                         initial = false
@@ -177,6 +149,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val magnetometerReading = kotlin.math.sqrt(x * x + y * y + z * z)
                     if(magnetometerReading<=27){
                         findViewById<TextView>(R.id.tv_status).text = "Status: In Lift"
+                        Toast.makeText(applicationContext, "In Lift", Toast.LENGTH_LONG).show()
                     }
                     else{
                         findViewById<TextView>(R.id.tv_status).text = "Status: Normal"

@@ -51,7 +51,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_margin="8dp"
-        android:text="Distance: 0m"
+        android:text="Distance: 0cm"
         android:textAlignment="center"
         android:textSize="18sp" />
 
@@ -61,7 +61,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_margin="8dp"
-        android:text="Displacement: 0m"
+        android:text="Displacement: 0cm"
         android:textAlignment="center"
         android:textSize="18sp" />
 
