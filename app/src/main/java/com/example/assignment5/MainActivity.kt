@@ -106,8 +106,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                             findViewById<TrajectoryView>(R.id.trajectoryView).addPoint(deltaX, deltaY)
                             val distance =  findViewById<TrajectoryView>(R.id.trajectoryView).calculateDistance()
                             val displacement =  findViewById<TrajectoryView>(R.id.trajectoryView).calculateDisplacement()
-                            findViewById<TextView>(R.id.tv_distance).text = "Distance: $distance cm"
-                            findViewById<TextView>(R.id.tv_displacement).text = "Displacement: $displacement cm"
+                            findViewById<TextView>(R.id.tv_distance).text = "Distance: ${distance/3} cm"
+                            findViewById<TextView>(R.id.tv_displacement).text = "Displacement: ${displacement/3} cm"
                         }
 
                         val x = event.values[0]
